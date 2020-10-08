@@ -15,28 +15,31 @@ var svg = d3.select("#scatter").append("svg")
     .attr("width", width)
     .attr("height", height);
 
-    //since this is a scatterplot we need to make our circles but they need to
-    //be scalable and contain text...
-    var circleRadi;
+//since this is a scatterplot we need to make our circles but they need to
+//be scalable and contain text...
+var circleRadi;
     function cirRadi() {
         if (width >= 530) {
         circleRadi = 12;
         }
         else { circleRadi = 6; }
     }   
-    cirRadi();
+cirRadi();
 
-    //readability
+//readability
 
-    //Labels instead of labeling directly we need to make them a function/group so
-    //scaling can work correctly
+//Labels instead of labeling directly we need to make them a function/group so
+//scaling can work correctly
 svg.append("g").attr("class", "xLabel");
 var xLabel = d3.select(".xLabel");
-xLabel.attr("transform", "translate (" +
+
+function xLabelReload(){
+    xLabel.attr("transform", "translate (" +
     ((width - labelSpace) / 2 + labelSpace) + ", " +
     (height - margin - txtpdB) + ")"
-);
-
+    );
+}
+xLabelReload();
 
 //use our xLabel to append the three different svgs needed, poverty:age:income
 xLabel.append("text")
@@ -64,16 +67,15 @@ xLabel.append("text")
 var textLeftX = margin + txtpdL;
 var textLeftY = (labelSpace + height) / 2 - labelSpace;
 
+svg.append("g").attr("class", "yLabel");
 var yLabel = d3.select(".yLabel");
-svg.append("g")
-    .attr("class", "yLabel");
 
-function newYlabel() {
+function yLabelReload() {
     yLabel.attr("transform", "translate (" +
         textLeftX + ", " + textLeftY + ") rotate(-90)"
     );
 }
-newYlabel();
+yLabelReload();
 
 //and again as above but for Obesity, Lack of Healthcare, Smoker
 yLabel.append("text")
@@ -159,6 +161,7 @@ function visualize(theData) {
 
     //data grouping and labels
     var circles = svg.selectAll("g circles").data(theData).enter();
+    
     circles.append("circle")
         .attr("cx", function (d) {
             return Xscale(d[curX]);
@@ -170,5 +173,12 @@ function visualize(theData) {
         .attr("class", function (d) {
             return "stateCircle " + d.abbr;
         })
-
+    
+    circles.append("text").text((d) => d.abbr)
+        .attr("dx", (d) => Xscale(d[curX]))
+        .attr("dy", (d) => Yscale(d[curY]) + cirRadi / 2.5)
+        .attr("font-size", cirRadi)
+        .attr("class","stateText");
+    
 }
+visualize();
