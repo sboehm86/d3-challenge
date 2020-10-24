@@ -1,187 +1,111 @@
-//shift+alt+f to clean indents
-//create scatterplot... I keep wanting to do things "backwards" as I would in python
-//first make the svg... div id="scatter"...nope didnt work moved what was here to line(s) 12
+var svgWidth =800;
+var svgHeight = 650;
 
-document.addEventListener('DOMContentLoaded', function (e) {
+var margin = {
+    top: 40,
+    bottom: 40,
+    left: 40,
+    right: 40};
 
-    //fung shuei the plot...set up the container...
-    var width = parseInt(d3.select("#scatter").style("width"));
-    var height = width - width / 4;
-    var margin = 19;
-    var labelSpace = 105;
-    var txtpdB = 40;
-    var txtpdL = 40;
+var width = svgWidth - (margin.left + margin.right);
+var height = svgHeight - (margin.top + margin.bottom);
 
-    var svg = d3.select("#scatter")
-        .append("svg")
-        .attr("class", "chart")
-        .attr("width", width)
-        .attr("height", height);
+var svg = d3.select("#scatter")
+    .append("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight)
+    .attr("class", "chart");
 
-    //since this is a scatterplot we need to make our circles but they need to
-    //be scalable and contain text...
-    var circleRadi;
-    function CirRadiFetch() {
-        if (width >= 530) {
-            circleRadi = 12;
-        }
-        else { circleRadi = 6; }
-    }
-    CirRadiFetc();
+//from Project 2 I realized iwas missing this piece...
+var chart = svg.append("g")
+    .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-    //readability
-
-    //Labels instead of labeling directly we need to make them a function/group so
-    //scaling can work correctly
-    svg.append("g").attr("class", "xLabel");
-    var xLabel = d3.select(".xLabel");
-
-    function xLabelReload() {
-        xLabel.attr("transform", "translate (" +
-            ((width - labelSpace) / 2 + labelSpace) + ", " +
-            (height - margin - txtpdB) + ")"
-        );
-    }
-    xLabelReload();
-
-    //use our xLabel to append the three different svgs needed, poverty:age:income
-    xLabel.append("text")
-        .attr("data-name", "poverty")
-        .attr("class", "aText active x")
-        .attr("y", -26)
-        .attr("data-axis", "x")
-        .text("In Poverty (%)");
-
-    xLabel.append("text")
-        .attr("data-name", "age")
-        .attr("class", "aText inactive x")
-        .attr("y", 0)
-        .attr("data-axis", "x")
-        .text("Age (median)");
-
-    xLabel.append("text")
-        .attr("data-name", "income")
-        .attr("class", "aText inactive x")
-        .attr("y", 26)
-        .attr("data-axis", "x")
-        .text("Income, household (median)");
-
-    //now the left side...
-    var textLeftX = margin + txtpdL;
-    var textLeftY = (labelSpace + height) / 2 - labelSpace;
-
-    svg.append("g").attr("class", "yLabel");
-    var yLabel = d3.select(".yLabel");
-
-    function yLabelReload() {
-        yLabel.attr("transform", "translate (" +
-            textLeftX + ", " + textLeftY + ") rotate(-90)"
-        );
-    }
-    yLabelReload();
-
-    //and again as above but for Obesity, Lack of Healthcare, Smoker
-    yLabel.append("text")
-        .attr("data-name", "obesity")
-        .attr("class", "aText active y")
-        .attr("y", -26)
-        .attr("data-axis", "y")
-        .text("Obese (%)");
-
-    yLabel.append("text")
-        .attr("data-name", "healthcare")
-        .attr("class", "aText inactive y")
-        .attr("y", 26)
-        .attr("data-axis", "y")
-        .text("Lack of Healthcare (%)");
-
-    yLabel.append("text")
-        .attr("data-name", "smokes")
-        .attr("class", "aText inactive y")
-        .attr("x", 0)
-        .attr("data-axis", "y")
-        .text("Smokers (%)");
-
-    // read the data... I keep wanting to put this up top
-    d3.csv("data/data.csv").then((data) => {
-        visualize(data);
+// read the data... I keep wanting to put this up top...moved back up from 115...
+d3.csv("data/data.csv").then((data) => {
+    //visualize(data);
+    data.forEach((data) => {
+        data.state = +data.state;
+        data.obesity = +data.obesity;
+        data.income = +data.income;
     });
 
-    //make our visualization function to display the csv data, set up variables
-    function visualize(theData) {
-        var curX = "poverty";
-        var curY = "smoking";
-        //leave these blank for make future code more efficient...
-        var yMin;
-        var yMax;
-        var xMin;
-        var xMax;
+    //forgot I needed scales...
 
-        //change our min and max to allow for changing data
-        function XminMax() {
-            xMin = d3.min(theData, function (d) {
-                return parseFloat(d[curX]) * .9;
-            });//min grabs the smallest, max the largest
-            xMax = d3.max(theData, function (d) {
-                return parseFloat(d[curX]) * 1.1;
+    //yMin = d3.min(data, (d) => parseFloat(d[curY]) * .9);//min grabs the smallest, max the largest
+    //yMax = d3.max(data, (d) => parseFloat(d[curY]) * 1.1);
+    //xMin = d3.min(data, (d) => parseFloat(d[curX]) * .9);//min grabs the smallest, max the largest
+    //xMax = d3.max(data, (d) => parseFloat(d[curX]) * 1.1);
+
+    var xAxis = d3.scaleLinear()
+        .domain([d3.min(data, d => d.income) - 2000, d3.max(data, d => d.income) + 2000])
+        .range([0, width]);
+
+    var yAxis = d3.scaleLinear()
+        .domain([d3.min(data, d => d.obesity) - 3, d3.max(data, d => d.obesity) + 3])
+        .range([height, 0])
+
+    //create axis function using variables we just made...i forgot to put var in front of both of these
+    var xAxis = d3.axisBottom(xAxis);
+    var yAxis = d3.axisLeft(yAxis);
+
+    //add the axis to the chart
+    chart.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(xAxis);
+    chart.append("g")
+        .call(yAxis);
+
+    //create chart guts now that chart is created, starting witht the circles...
+    var circles = chart.selectAll(".circle")
+        .data(data)
+        .enter()
+        .append("rect")
+        .classed("bar", true)
+        .attr("width", data => barWidth)
+        .attr("height", data => data.spawn_chance * scaleY)
+        .attr("x", (data, i) => i * (barWidth + barSpacing))
+        .attr("y", data => chartHeight - data.spawn_chance * scaleY);
+    
+    //circles.append("circle")
+        //.attr("class", "dot")
+        //.attr("r", (data) => d.r)
+        //.attr("cx", (data) => (data.xAxis))
+        //.attr("cy", (data) => (data.yAxis));
+    //.style("fill", (d) => d.c);
+
+    // make our labels now
+    chart.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -25 - margin.left + 20)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "1em")
+        .attr("class", "axisText")
+        .text("Obesity (BMI)");
+
+    chart.append("text")
+        .attr("transform", `translate(${width / 2}, ${height + margin.top + 10})`)
+        .attr("class", "axisText")
+        .text("Income");
+
+    // and finally the tooltip
+    var toolTip = d3.tip()
+        .attr("class", "tooltip")
+        .offset([-8, 0])
+        .html(function (data) {
+            return (`${data.state}`)
+        });
+
+    chart.call(toolTip);
+
+    // make the tooltip function on a mouseover
+    circles.on("mouseover", function (data) {
+        toolTip.show(data, this);
+    })
+        .on("mouseout", (data) => {
+                toolTip.hide(data);
             });
-        }
 
-        function YminMax() {
-            yMin = d3.min(theData, function (d) {
-                return parseFloat(d[curY]) * .9;
-            });//min grabs the smallest, max the largest
-            yMax = d3.max(theData, function (d) {
-                return parseFloat(d[curY]) * 1.1;
-            });
-        }
+})
 
-        //now we can generate the svg with the data
-        XminMax();
-        YminMax();
-
-        //forgot I needed scales...
-        var Xscale = d3
-            .scalelinear()
-            .domain([xMin, xMax])
-            .range([margin + labelSpace, width - margin]);
-
-        var Yscale = d3
-            .scaleLinear()
-            .domain([yMin, yMax])
-            .range([height - margin - labelSpace, margin]);
-
-        var yAxis = d3.axisLeft(Yscale);
-        var xAxis = d3.axisBottom(Xscale);
-
-        svg.append("g").call(xAxis)
-            .attr("class", "xAxis")
-            .attr("transform", "translate(0," + (height - margin - labelSpace) + ")");
-
-        svg.append("g").call(yAxis)
-            .attr("class", "yAxis")
-            .attr("transform", "translate(" + (margin + labelSpace) + ",0)");
-
-        //data grouping and labels
-        var circles = svg.selectAll("g circles").data(theData).enter();
-
-        circles.append("circle")
-            .attr("cx", function (d) {
-                return Xscale(d[curX]);
-            })
-            .attr("cy", function (d) {
-                return Yscale(d[curY])
-            })
-            .attr("r", circleRadi)
-            .attr("class", function (d) {
-                return "stateCircle " + d.abbr;
-            })
-
-        circles.append("text").text((d) => d.abbr)
-            .attr("dx", (d) => Xscale(d[curX]))
-            .attr("dy", (d) => Yscale(d[curY]) + CirRadiFetch / 2.5)
-            .attr("font-size", CirRadiFetch)
-            .attr("class", "stateText");
-
-    };
-}
+    //I removed the original contents of 40-202 from here because I decided a complete rebuild of the
+    //code was in order, the original contents are in the junk code document in data
